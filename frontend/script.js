@@ -11,6 +11,6 @@ function sendMessage() {
     .then(response => response.json())
     .then(data => {
         document.getElementById("result").innerText =
-            "Detected intent: " + data.intent;
+            "Detected intent: " + data.intent + "\n" + data.response;
     });
 }
