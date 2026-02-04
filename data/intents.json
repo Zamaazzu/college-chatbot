@@ -1,0 +1,51 @@
+{
+  "intents": [
+    {
+      "tag": "exam",
+      "patterns": [
+        "When is the exam",
+        "Exam date for S6",
+        "When will exams start",
+        "Semester exam schedule"
+      ]
+    },
+    {
+      "tag": "attendance",
+      "patterns": [
+        "What is my attendance",
+        "Attendance percentage",
+        "Attendance requirement",
+        "How much attendance is needed"
+      ]
+    },
+    {
+      "tag": "fees",
+      "patterns": [
+        "Fee payment last date",
+        "What is the fee structure",
+        "When should I pay fees",
+        "College fees details"
+      ]
+    },
+    {
+      "tag": "event",
+      "patterns": [
+        "College fest date",
+        "Upcoming events",
+        "When is the college event",
+        "When is the event",
+        "Event schedule",
+        "Technical fest details"
+      ]
+    },
+    {
+      "tag": "admin",
+      "patterns": [
+        "Office working hours",
+        "College office timing",
+        "Where is admin office",
+        "Whom to contact for queries"
+      ]
+    }
+  ]
+}
