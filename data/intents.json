@@ -46,6 +46,52 @@
         "Where is admin office",
         "Whom to contact for queries"
       ]
+    },
+    {
+      "tag": "greeting",
+      "patterns": [
+        "Hi",
+        "Hello",
+        "Hey",
+        "Good morning",
+        "Good evening"
+      ]
+    },
+    {
+      "tag": "help",
+      "patterns": [
+        "What can you do",
+        "How can you help me",
+        "Help",
+        "What questions can I ask"
+      ]
+    },
+    {
+      "tag": "library",
+      "patterns": [
+        "Library timing",
+        "Is the library open",
+        "Library rules",
+        "Library information"
+      ]
+    },
+    {
+      "tag": "syllabus",
+      "patterns": [
+        "Syllabus for semester",
+        "Course syllabus",
+        "Subject syllabus",
+        "Where can I find syllabus"
+      ]
+    },
+    {
+      "tag": "result",
+      "patterns": [
+        "When are results published",
+        "Exam results",
+        "Result date",
+        "How to check results"
+      ]
     }
   ]
 }
