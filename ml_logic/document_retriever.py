@@ -4,15 +4,19 @@ import re
 import nltk
 import numpy as np
 from sentence_transformers import SentenceTransformer
+from sklearn.preprocessing import normalize
 
 nltk.download("punkt")
 
 DOCS_PATH = "data/documents"
 
-# Load embedding model once (semantic retrieval)
+# Load embedding model once
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
+# ===============================
+# Text Cleaning
+# ===============================
 def clean_text(text):
     text = text.encode("ascii", errors="ignore").decode()
     text = re.sub(r'[^a-zA-Z0-9₹Rs./\-:,\s]', '', text)
@@ -20,9 +24,15 @@ def clean_text(text):
     return text.strip()
 
 
+# ===============================
+# Load All PDFs
+# ===============================
 def load_documents():
     documents = []
     filenames = []
+
+    if not os.path.exists(DOCS_PATH):
+        return documents, filenames
 
     for file in os.listdir(DOCS_PATH):
         if file.endswith(".pdf"):
@@ -47,12 +57,17 @@ def load_documents():
                             text += row_text + "\n"
 
             cleaned = clean_text(text)
-            documents.append(cleaned)
-            filenames.append(file)
+
+            if len(cleaned) > 100:
+                documents.append(cleaned)
+                filenames.append(file)
 
     return documents, filenames
 
 
+# ===============================
+# Chunking
+# ===============================
 def chunk_text(text, chunk_size=450):
     words = text.split()
     chunks = []
@@ -65,6 +80,9 @@ def chunk_text(text, chunk_size=450):
     return chunks
 
 
+# ===============================
+# Semantic Retrieval
+# ===============================
 def find_most_relevant_document(query):
     docs, names = load_documents()
 
@@ -73,9 +91,11 @@ def find_most_relevant_document(query):
 
     best_score = -1
     best_doc_name = None
-    best_chunk = None
+    best_context = None
 
-    query_embedding = embedding_model.encode([query])[0]
+    # Encode query
+    query_embedding = embedding_model.encode([query])
+    query_embedding = normalize(query_embedding)[0]
 
     for doc_text, doc_name in zip(docs, names):
 
@@ -83,20 +103,25 @@ def find_most_relevant_document(query):
         if not chunks:
             continue
 
+        # Encode chunks
         chunk_embeddings = embedding_model.encode(chunks)
+        chunk_embeddings = normalize(chunk_embeddings)
 
-        # Cosine similarity using dot product
+        # Cosine similarity
         similarities = np.dot(chunk_embeddings, query_embedding)
 
-        max_index = similarities.argmax()
-        score = similarities[max_index]
+        # Top 3 most similar chunks
+        top_k = min(3, len(similarities))
+        top_indices = similarities.argsort()[-top_k:][::-1]
 
-        if score > best_score:
-            best_score = score
+        combined_context = " ".join([chunks[i] for i in top_indices])
+        top_score = similarities[top_indices[0]]
+
+        if top_score > best_score:
+            best_score = top_score
             best_doc_name = doc_name
-            best_chunk = chunks[max_index]
+            best_context = combined_context
 
-    if best_score < 0.25:
-        return None, None
+    
 
-    return best_doc_name, best_chunk
+    return best_doc_name, best_context
