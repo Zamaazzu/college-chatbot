@@ -17,31 +17,31 @@ vectorizer = pickle.load(open("models/tfidf.pkl", "rb"))
 # Conversation Memory
 # ===============================
 conversation_history = []
-last_user_query = ""
-current_topic = None
+topic_memory = {}
+last_topic = None
 
 
 # ===============================
-# Detect Topic
+# Topic Detection
 # ===============================
-def detect_topic(user_text):
+def detect_topic(text):
 
-    text = user_text.lower()
+    text = text.lower()
 
-    if "faculty" in text or "teacher" in text or "hod" in text:
-        return "faculty"
+    topic_keywords = {
+        "faculty": ["faculty", "teacher", "hod", "professor"],
+        "exam": ["exam", "semester", "internal", "test"],
+        "fees": ["fee", "tuition", "deposit"],
+        "library": ["library", "reading", "books"],
+        "event": ["event", "fest", "celebration", "sports", "arts"],
+        "class": ["class", "lecture", "schedule", "timing"],
+        "campus": ["campus", "location", "building", "room"]
+    }
 
-    if "exam" in text:
-        return "exam"
-
-    if "fee" in text:
-        return "fees"
-
-    if "library" in text:
-        return "library"
-
-    if "event" in text:
-        return "event"
+    for topic, words in topic_keywords.items():
+        for word in words:
+            if word in text:
+                return topic
 
     return None
 
@@ -49,30 +49,47 @@ def detect_topic(user_text):
 # ===============================
 # Follow-up Query Enrichment
 # ===============================
-def enrich_query_with_memory(user_text):
+def enrich_query(user_text):
 
-    global last_user_query
-    global current_topic
-
-    follow_words = [
-        "its", "their", "them", "that",
-        "those", "what about", "and",
-        "also", "another"
-    ]
+    global topic_memory
+    global last_topic
 
     text = user_text.lower()
 
+    follow_words = [
+        "its",
+        "their",
+        "them",
+        "that",
+        "those",
+        "what about",
+        "and",
+        "also",
+        "another",
+        "friday",
+        "then",
+        "next"
+    ]
+
+    # detect topic
+    topic = detect_topic(text)
+
+    if topic:
+        topic_memory[topic] = text
+        last_topic = topic
+        return text
+
+    # follow-up detection
     for word in follow_words:
 
-        if word in text:
+        if word in text and last_topic:
 
-            if current_topic:
-                return current_topic + " " + user_text
+            previous_topic_query = topic_memory.get(last_topic)
 
-            if last_user_query:
-                return last_user_query + " " + user_text
+            if previous_topic_query:
+                return previous_topic_query + " " + text
 
-    return user_text
+    return text
 
 
 # ===============================
@@ -106,6 +123,7 @@ Student question:
 
 Answer:
 """
+
     try:
 
         response = requests.post(
@@ -122,7 +140,7 @@ Answer:
         if "response" in result:
             return result["response"].strip()
 
-        return "Sorry, I couldn't generate a response right now."
+        return "Sorry, I couldn't generate a response."
 
     except Exception:
         return "The AI response service is currently unavailable."
@@ -135,8 +153,6 @@ Answer:
 def predict():
 
     global conversation_history
-    global last_user_query
-    global current_topic
 
     data = request.get_json()
 
@@ -147,7 +163,7 @@ def predict():
     lower_text = user_text.lower()
 
     # ===============================
-    # Greeting
+    # Greetings
     # ===============================
     greetings = ["hi", "hello", "hey", "good morning", "good evening"]
 
@@ -155,16 +171,14 @@ def predict():
 
         response = (
             "Hello! I'm your AI college assistant. "
-            "I can help with information about exams, fees, faculty members, "
-            "library services, campus facilities, and college events. "
-            "What would you like to know?"
+            "I can help with exams, fees, faculty information, "
+            "library services, campus locations, and college events."
         )
 
         conversation_history.append("User: " + user_text)
         conversation_history.append("Bot: " + response)
 
         return jsonify({"intent": "greeting", "response": response})
-
 
     # ===============================
     # Help Queries
@@ -174,9 +188,9 @@ def predict():
     if lower_text in help_queries:
 
         response = (
-            "I can assist you with information about exam schedules, "
-            "fee structures, faculty details, library services, "
-            "campus facilities, administrative contacts, and college events."
+            "I can answer questions about exam schedules, fee structure, "
+            "faculty members, campus facilities, class timings, "
+            "library services, and college events."
         )
 
         conversation_history.append("User: " + user_text)
@@ -184,28 +198,21 @@ def predict():
 
         return jsonify({"intent": "help", "response": response})
 
+    # ===============================
+    # Query Enrichment (Memory)
+    # ===============================
+    enriched_query = enrich_query(user_text)
 
     # ===============================
-    # Topic Detection
-    # ===============================
-    detected_topic = detect_topic(user_text)
-
-    if detected_topic:
-        current_topic = detected_topic
-
-
-    # ===============================
-    # ML Intent Detection
+    # Intent Detection
     # ===============================
     vec = vectorizer.transform([user_text])
     probs = model.predict_proba(vec)[0]
-    max_prob = max(probs)
 
-    if max_prob < 0.2:
+    if max(probs) < 0.2:
         intent = "unknown"
     else:
         intent = model.classes_[probs.argmax()]
-
 
     # ===============================
     # Attendance Shortcut
@@ -213,44 +220,19 @@ def predict():
     if "attendance" in lower_text:
         intent = "attendance"
 
-
     # ===============================
     # Response Logic
     # ===============================
     if intent == "attendance":
 
         response = (
-            "Students are required to maintain at least 75% attendance "
-            "in each subject. If attendance falls below this requirement, "
-            "the student may not be eligible to appear for the semester examinations."
+            "Students must maintain at least 75 percent attendance in each subject. "
+            "Students below this limit may not be eligible to appear for semester examinations."
         )
 
+    else:
 
-    elif intent in [
-        "exam",
-        "fees",
-        "event",
-        "faculty",
-        "admin",
-        "library",
-        "syllabus",
-        "result"
-    ] or any(word in lower_text for word in [
-        "exam",
-        "fee",
-        "library",
-        "event",
-        "faculty",
-        "result",
-        "facility"
-    ]):
-
-        # ===============================
-        # Follow-up Query Enrichment
-        # ===============================
-        enriched_query = enrich_query_with_memory(user_text)
-
-        expanded_query = enriched_query + " details information explanation"
+        expanded_query = enriched_query + " college information explanation"
 
         doc_name, content = find_most_relevant_document(expanded_query)
 
@@ -266,29 +248,17 @@ def predict():
 
             response = (
                 "I couldn't find that information in the available documents. "
-                "Please contact the college administration office for clarification."
+                "Please contact the college administration office."
             )
 
-
-    else:
-
-        response = (
-            "I can assist with college information such as exams, fees, "
-            "faculty details, library services, and campus facilities."
-        )
-
-
     # ===============================
-    # Save Conversation Memory
+    # Save Conversation
     # ===============================
     conversation_history.append("User: " + user_text)
     conversation_history.append("Bot: " + response)
 
-    last_user_query = user_text
-
     if len(conversation_history) > 20:
         conversation_history = conversation_history[-20:]
-
 
     return jsonify({
         "intent": intent,

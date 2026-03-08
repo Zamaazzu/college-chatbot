@@ -14,12 +14,22 @@ DOCS_PATH = "data/documents"
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # ===============================
-# Global Cache (NEW)
+# Global Cache
 # ===============================
 DOCUMENT_CHUNKS = []
 DOCUMENT_NAMES = []
 CHUNK_EMBEDDINGS = None
 INITIALIZED = False
+
+
+# ===============================
+# Stopwords (NEW)
+# ===============================
+STOPWORDS = {
+    "what","is","the","a","an","about","tell","me",
+    "give","information","details","please","of",
+    "in","on","for","to","and","with"
+}
 
 
 # ===============================
@@ -56,13 +66,11 @@ def load_documents():
 
                 for page in pdf.pages:
 
-                    # Extract text
                     extracted = page.extract_text()
 
                     if extracted:
                         text += extracted + "\n"
 
-                    # Extract tables
                     tables = page.extract_tables()
 
                     for table in tables:
@@ -140,7 +148,7 @@ def expand_query(query):
 
 
 # ===============================
-# Initialize Document Cache (NEW)
+# Initialize Document Cache
 # ===============================
 def initialize_documents():
 
@@ -193,20 +201,26 @@ def find_most_relevant_document(query):
     query_embedding = embedding_model.encode([query])
     query_embedding = normalize(query_embedding)[0]
 
-    query_words = query.lower().split()
+    # remove stopwords
+    query_words = [
+        word for word in query.lower().split()
+        if word not in STOPWORDS
+    ]
 
     # Cosine similarity
     similarities = np.dot(CHUNK_EMBEDDINGS, query_embedding)
 
     # ===============================
-    # Keyword Boosting
+    # Keyword Boosting (Improved)
     # ===============================
     for i, chunk in enumerate(DOCUMENT_CHUNKS):
 
+        chunk_lower = chunk.lower()
+
         for word in query_words:
 
-            if word in chunk.lower():
-                similarities[i] += 0.05
+            if word in chunk_lower:
+                similarities[i] += 0.08
 
 
     # ===============================
@@ -217,13 +231,19 @@ def find_most_relevant_document(query):
 
     selected_chunks = []
     doc_name = None
+    used_chunks = set()
 
     for i in top_indices:
 
-        if similarities[i] > 0.25:
+        if similarities[i] > 0.28:
 
-            selected_chunks.append(DOCUMENT_CHUNKS[i])
-            doc_name = DOCUMENT_NAMES[i]
+            chunk = DOCUMENT_CHUNKS[i]
+
+            if chunk not in used_chunks:
+
+                selected_chunks.append(chunk)
+                used_chunks.add(chunk)
+                doc_name = DOCUMENT_NAMES[i]
 
     if not selected_chunks:
         return None, None
