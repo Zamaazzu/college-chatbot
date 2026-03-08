@@ -13,21 +13,32 @@ DOCS_PATH = "data/documents"
 # Load embedding model once
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
+# ===============================
+# Global Cache (NEW)
+# ===============================
+DOCUMENT_CHUNKS = []
+DOCUMENT_NAMES = []
+CHUNK_EMBEDDINGS = None
+INITIALIZED = False
+
 
 # ===============================
 # Text Cleaning
 # ===============================
 def clean_text(text):
+
     text = text.encode("ascii", errors="ignore").decode()
     text = re.sub(r'[^a-zA-Z0-9₹Rs./\-:,\s]', '', text)
     text = re.sub(r'\s+', ' ', text)
+
     return text.strip()
 
 
 # ===============================
-# Load All PDFs
+# Load PDFs
 # ===============================
 def load_documents():
+
     documents = []
     filenames = []
 
@@ -35,30 +46,39 @@ def load_documents():
         return documents, filenames
 
     for file in os.listdir(DOCS_PATH):
+
         if file.endswith(".pdf"):
+
             full_path = os.path.join(DOCS_PATH, file)
             text = ""
 
             with pdfplumber.open(full_path) as pdf:
+
                 for page in pdf.pages:
 
-                    # Extract normal text
+                    # Extract text
                     extracted = page.extract_text()
+
                     if extracted:
                         text += extracted + "\n"
 
                     # Extract tables
                     tables = page.extract_tables()
+
                     for table in tables:
+
                         for row in table:
+
                             row_text = " | ".join(
                                 [cell.strip() if cell else "" for cell in row]
                             )
+
                             text += row_text + "\n"
 
             cleaned = clean_text(text)
 
             if len(cleaned) > 100:
+
                 documents.append(cleaned)
                 filenames.append(file)
 
@@ -66,14 +86,17 @@ def load_documents():
 
 
 # ===============================
-# Chunking
+# Chunk text
 # ===============================
-def chunk_text(text, chunk_size=450):
+def chunk_text(text, chunk_size=250, overlap=40):
+
     words = text.split()
     chunks = []
 
-    for i in range(0, len(words), chunk_size):
+    for i in range(0, len(words), chunk_size - overlap):
+
         chunk = " ".join(words[i:i + chunk_size])
+
         if len(chunk) > 100:
             chunks.append(chunk)
 
@@ -81,47 +104,130 @@ def chunk_text(text, chunk_size=450):
 
 
 # ===============================
-# Semantic Retrieval
+# Query Expansion
 # ===============================
-def find_most_relevant_document(query):
+def expand_query(query):
+
+    query_lower = query.lower()
+
+    expansion_map = {
+
+        "library": "books reading study room digital library journal timing working hours",
+
+        "exam": "examination semester test hall ticket rules timetable",
+
+        "attendance": "minimum attendance percentage requirement rule",
+
+        "fees": "tuition fee semester fee payment fee structure",
+
+        "event": "college event fest program activity cultural technical fest",
+
+        "faculty": "teacher professor department staff",
+
+        "result": "exam result marks grade semester result",
+
+        "admin": "administration office help desk contact"
+    }
+
+    expanded_query = query
+
+    for key in expansion_map:
+
+        if key in query_lower:
+            expanded_query += " " + expansion_map[key]
+
+    return expanded_query
+
+
+# ===============================
+# Initialize Document Cache (NEW)
+# ===============================
+def initialize_documents():
+
+    global DOCUMENT_CHUNKS, DOCUMENT_NAMES, CHUNK_EMBEDDINGS, INITIALIZED
+
+    if INITIALIZED:
+        return
+
     docs, names = load_documents()
 
-    if not docs:
-        return None, None
-
-    best_score = -1
-    best_doc_name = None
-    best_context = None
-
-    # Encode query
-    query_embedding = embedding_model.encode([query])
-    query_embedding = normalize(query_embedding)[0]
+    all_chunks = []
+    all_doc_names = []
 
     for doc_text, doc_name in zip(docs, names):
 
         chunks = chunk_text(doc_text)
-        if not chunks:
-            continue
 
-        # Encode chunks
-        chunk_embeddings = embedding_model.encode(chunks)
-        chunk_embeddings = normalize(chunk_embeddings)
+        for chunk in chunks:
+            all_chunks.append(chunk)
+            all_doc_names.append(doc_name)
 
-        # Cosine similarity
-        similarities = np.dot(chunk_embeddings, query_embedding)
+    if not all_chunks:
+        return
 
-        # Top 3 most similar chunks
-        top_k = min(3, len(similarities))
-        top_indices = similarities.argsort()[-top_k:][::-1]
+    embeddings = embedding_model.encode(all_chunks)
+    embeddings = normalize(embeddings)
 
-        combined_context = " ".join([chunks[i] for i in top_indices])
-        top_score = similarities[top_indices[0]]
+    DOCUMENT_CHUNKS = all_chunks
+    DOCUMENT_NAMES = all_doc_names
+    CHUNK_EMBEDDINGS = embeddings
 
-        if top_score > best_score:
-            best_score = top_score
-            best_doc_name = doc_name
-            best_context = combined_context
+    INITIALIZED = True
 
-    
 
-    return best_doc_name, best_context
+# ===============================
+# Semantic Retrieval
+# ===============================
+def find_most_relevant_document(query):
+
+    global DOCUMENT_CHUNKS, DOCUMENT_NAMES, CHUNK_EMBEDDINGS
+
+    initialize_documents()
+
+    if not DOCUMENT_CHUNKS:
+        return None, None
+
+    # Query expansion
+    query = expand_query(query)
+
+    query_embedding = embedding_model.encode([query])
+    query_embedding = normalize(query_embedding)[0]
+
+    query_words = query.lower().split()
+
+    # Cosine similarity
+    similarities = np.dot(CHUNK_EMBEDDINGS, query_embedding)
+
+    # ===============================
+    # Keyword Boosting
+    # ===============================
+    for i, chunk in enumerate(DOCUMENT_CHUNKS):
+
+        for word in query_words:
+
+            if word in chunk.lower():
+                similarities[i] += 0.05
+
+
+    # ===============================
+    # Select best chunks
+    # ===============================
+    top_k = min(5, len(similarities))
+    top_indices = similarities.argsort()[-top_k:][::-1]
+
+    selected_chunks = []
+    doc_name = None
+
+    for i in top_indices:
+
+        if similarities[i] > 0.25:
+
+            selected_chunks.append(DOCUMENT_CHUNKS[i])
+            doc_name = DOCUMENT_NAMES[i]
+
+    if not selected_chunks:
+        return None, None
+
+    combined_context = "\n\n".join(selected_chunks)
+
+    return doc_name, combined_context

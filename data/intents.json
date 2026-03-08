@@ -4,9 +4,20 @@
       "tag": "exam",
       "patterns": [
         "When is the exam",
+        "Exam date",
         "Exam date for S6",
         "When will exams start",
-        "Semester exam schedule"
+        "Semester exam schedule",
+        "Exam timetable",
+        "When are semester exams",
+        "Final exam date",
+        "Exam notification",
+        "Exam details",
+        "When do exams begin",
+        "Upcoming exam dates",
+        "Internal exam schedule",
+        "External exam timetable",
+        "Exam time table details"
       ]
     },
     {
@@ -15,7 +26,18 @@
         "What is my attendance",
         "Attendance percentage",
         "Attendance requirement",
-        "How much attendance is needed"
+        "How much attendance is needed",
+        "Minimum attendance required",
+        "Attendance rules",
+        "Attendance criteria",
+        "Required attendance percentage",
+        "Attendance policy",
+        "How many days attendance needed",
+        "Can I attend exam with low attendance",
+        "Attendance details",
+        "Shortage of attendance",
+        "Attendance eligibility",
+        "Attendance regulation"
       ]
     },
     {
@@ -35,7 +57,12 @@
         "Management quota fee",
         "Merit quota fee",
         "Explain fee structure",
-        "Tuition fee details"
+        "Tuition fee details",
+        "Semester fee",
+        "Hostel fee details",
+        "Total course fee",
+        "Fee payment deadline",
+        "Installment fee details"
       ]
     },
     {
@@ -46,7 +73,16 @@
         "When is the college event",
         "When is the event",
         "Event schedule",
-        "Technical fest details"
+        "Technical fest details",
+        "Annual day date",
+        "Workshop schedule",
+        "Seminar details",
+        "Sports day date",
+        "Cultural fest date",
+        "College program schedule",
+        "Event timetable",
+        "Upcoming programs",
+        "College activities schedule"
       ]
     },
     {
@@ -55,7 +91,18 @@
         "Office working hours",
         "College office timing",
         "Where is admin office",
-        "Whom to contact for queries"
+        "Whom to contact for queries",
+        "Administrative office details",
+        "Office contact number",
+        "Office email address",
+        "Principal office timing",
+        "Administrative contact",
+        "College administration details",
+        "Office working days",
+        "Admin office location",
+        "College contact information",
+        "Who is in charge of admin",
+        "Administrative support details"
       ]
     },
     {
@@ -65,7 +112,17 @@
         "Hello",
         "Hey",
         "Good morning",
-        "Good evening"
+        "Good evening",
+        "Good afternoon",
+        "Greetings",
+        "Hello chatbot",
+        "Hi there",
+        "Hey bot",
+        "What's up",
+        "Is anyone there",
+        "Start",
+        "Can we talk",
+        "Hello assistant"
       ]
     },
     {
@@ -74,7 +131,18 @@
         "What can you do",
         "How can you help me",
         "Help",
-        "What questions can I ask"
+        "What questions can I ask",
+        "What services do you provide",
+        "How does this chatbot work",
+        "Guide me",
+        "How to use this bot",
+        "What information can you give",
+        "Tell me your features",
+        "Available services",
+        "How to ask questions",
+        "What are your capabilities",
+        "Explain your functions",
+        "Support information"
       ]
     },
     {
@@ -83,7 +151,18 @@
         "Library timing",
         "Is the library open",
         "Library rules",
-        "Library information"
+        "Library information",
+        "Library working hours",
+        "Book borrowing rules",
+        "Library contact",
+        "Library fine details",
+        "How to issue books",
+        "Library card details",
+        "Library closing time",
+        "Reading room timing",
+        "Library location",
+        "Return book deadline",
+        "Library facilities"
       ]
     },
     {
@@ -92,7 +171,18 @@
         "Syllabus for semester",
         "Course syllabus",
         "Subject syllabus",
-        "Where can I find syllabus"
+        "Where can I find syllabus",
+        "Semester syllabus details",
+        "Download syllabus",
+        "Updated syllabus",
+        "Curriculum details",
+        "Course content",
+        "Academic syllabus",
+        "Program syllabus",
+        "Subject course outline",
+        "Detailed syllabus",
+        "New syllabus",
+        "Syllabus document"
       ]
     },
     {
@@ -101,7 +191,18 @@
         "When are results published",
         "Exam results",
         "Result date",
-        "How to check results"
+        "How to check results",
+        "Semester results",
+        "Result announcement",
+        "Where to see results",
+        "Result portal",
+        "Internal marks result",
+        "Final result date",
+        "Mark list details",
+        "Scorecard download",
+        "Result status",
+        "Exam mark publication",
+        "Result declaration date"
       ]
     }
   ]
